@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+..env.*.tmp
+.band.json
+.band.json.tmp
+.capture-ca/
+.capture-venv/
+.tools/
+auth-key.txt
+.zepp-credentials.json
+*.log
+core
