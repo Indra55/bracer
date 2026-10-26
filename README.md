@@ -1,6 +1,6 @@
 # bracer
 
-![bracer](docs/assets/bracer.svg)
+![bracer and fitness-band illustration](docs/assets/bracer-header.svg)
 
 Your coding agent wants to run a command. Your fitness tracker would like a word.
 
