@@ -1,6 +1,6 @@
 # bracer
 
-![bracer: a very small supervisor for a very large language model](docs/assets/bracer.svg)
+![bracer](docs/assets/bracer.svg)
 
 Your coding agent wants to run a command. Your fitness tracker would like a word.
 
