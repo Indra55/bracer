@@ -1,51 +1,56 @@
-# Bracer
+# bracer
 
-**Codex asks. Your wrist answers.**
+![bracer: a very small supervisor for a very large language model](docs/assets/bracer.svg)
 
-Review Codex command approvals on a Mi Band 5. Read the command on its music screen, press play to approve once, or volume down to decline.
+Your coding agent wants to run a command. Your fitness tracker would like a word.
 
-Bracer connects directly over Bluetooth, queues requests from local chats, and reconnects when the band returns. Your phone is only needed for pairing and key retrieval.
+Bracer puts Codex command approvals on a **Mi Band 5**. Read the command on your wrist, tap play to let it run, or volume down to decline. Next/previous pages through the details.
 
-## Get started
+Yes, the music screen. The artist, album, and track fields were sitting right there.
 
-You'll need Linux, Python 3.11+, a Bluetooth LE adapter, a paired Mi Band 5, and a logged-in Codex CLI. Run from the checkout:
-
-```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+```text
+  Codex ── permission hook ── local socket ── Bluetooth ── your wrist
+                                                            │
+                                                      play  → allow once
+                                                      vol−  → decline
 ```
 
-Using a coding agent? Point it at the [Bracer setup skill](skills/bracer-setup/SKILL.md).
+The computer talks straight to the band. Zepp Life gets involved for pairing and the initial key; after that, turn phone Bluetooth off so it releases the connection. The service keeps the band connected and queues reviews from multiple chats.
 
-Follow the [setup guide](docs/SETUP.md) to retrieve your pairing key, connect the band, and install the Codex hook. Private configuration stays in an ignored `.env`.
+## give it a wrist
 
-To try the review flow in your terminal without a band or command execution:
+You'll need **Linux + BlueZ**, **Python 3.11+**, a paired **Mi Band 5**, and a logged-in **Codex CLI**.
+
+The quick route: give your coding agent the [setup skill](skills/bracer-setup/SKILL.md).
+
+```text
+Set up Bracer using https://github.com/Indra55/bracer/blob/main/skills/bracer-setup/SKILL.md
+```
+
+Or [do it yourself](docs/SETUP.md). The pairing key stays in an ignored `.env`. You'll still need to trust the hook in Codex's `/hooks` menu.
+
+Curious, but your band is in a drawer somewhere? Try the terminal version:
 
 ```sh
+git clone https://github.com/Indra55/bracer.git
+cd bracer
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m miband_agent demo --simulate-band
 ```
 
-## Controls
+`n` / `p` to browse, `y` to approve, `d` to decline. This demo executes nothing.
 
-Open **More → Music** on the band when a review arrives.
+## the slightly cursed bit
 
-| Control | Action |
-| --- | --- |
-| Play / pause | Approve once |
-| Volume down | Decline |
-| Next / previous track | Browse command details |
+Bracer sends text through the band's music metadata protocol and listens for music-control events. Stock firmware, a BLE connection, and some Python. The [protocol notes](docs/DEVELOPMENT.md) have the wiring; the [key-retrieval notes](docs/AUTH_KEY.md) have the rabbit hole.
 
-Bracer follows Codex's existing approval policy. It routes shell command requests; other approval types stay in Codex. If the band is unavailable before review starts, the normal prompt remains available.
+It follows Codex's existing permission rules. Play approves **one request**, without saving an allow rule. Losing the band during review declines the request. If the band is unavailable before review starts, Codex keeps its normal prompt. Other approval types stay in Codex.
 
-## Documentation
+## things that still need poking
 
-- [Setup](docs/SETUP.md): installation, private configuration, and hook trust
-- [Usage](docs/USAGE.md): commands, service management, and troubleshooting
-- [Pairing keys](docs/AUTH_KEY.md): retrieval and rotation
-- [Development](docs/DEVELOPMENT.md): architecture, tests, and protocol references
-- [Validation](docs/DEVICE_ACCEPTANCE.md): hardware evidence and remaining checks
-- [Experimental tools](docs/KEY_CAPTURE.md): optional setup helpers and their limitations
+Real standalone Codex commands have been accepted and rejected from the band. The ordinary-chat hook is implemented, but its complete accept/decline round trip still needs validation. Readability, vibration, and repeated reconnects need more time on actual hardware. [Receipts and loose ends →](docs/DEVICE_ACCEPTANCE.md)
 
-**Prototype status:** real standalone approvals and rejections have worked on hardware. Ordinary-chat hook validation and further physical checks remain pending; see [validation](docs/DEVICE_ACCEPTANCE.md).
+---
 
-[AGPL-3.0-or-later](LICENSE).
+[setup](docs/SETUP.md) · [commands / troubleshooting](docs/USAGE.md) · [internals](docs/DEVELOPMENT.md) · [experimental tools](docs/KEY_CAPTURE.md) · [AGPL-3.0-or-later](LICENSE)
