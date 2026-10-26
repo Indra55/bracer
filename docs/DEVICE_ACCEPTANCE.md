@@ -42,4 +42,4 @@ The standalone acceptance/rejection results preceded later reconnect and native-
 
 ## Reproduce
 
-Run the software suite with `.venv/bin/python -m unittest discover -s tests -v`. Run `probe`, then `demo`, from a normal Bluetooth-capable host terminal. For ordinary chats, follow the [hook setup](../README.md#connect-ordinary-codex-chats) and trigger a command that genuinely needs permission. Record command completion for acceptance and explicit rejection/non-execution for decline; a discovered hook alone does not establish that it ran.
+Run the software suite with `.venv/bin/python -m unittest discover -s tests -v`. Run `probe`, then `demo`, from a normal Bluetooth-capable host terminal. For ordinary chats, follow the [hook setup](SETUP.md#connect-ordinary-codex-chats) and trigger a command that genuinely needs permission. Record command completion for acceptance and explicit rejection/non-execution for decline; a discovered hook alone does not establish that it ran.
