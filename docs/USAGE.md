@@ -77,7 +77,7 @@ systemctl --user stop miband-agent.service
 systemctl --user disable --now miband-agent.service
 ```
 
-The service starts at login, reconnects to the band, and waits for requests. It never starts or resumes Codex tasks on its own. Reconnect delays increase from 1 to 30 seconds; scanning/authentication adds time. Requests and display writes from an old connection are invalidated and never replayed. The service keeps retrying after a client's initial connection wait times out.
+The service starts at login, reconnects to the band, and waits for requests. It never starts or resumes Codex tasks on its own. On Linux it reuses an existing Bluetooth connection to the configured band before scanning, since an already-connected band may stop advertising. Reconnect delays increase from 1 to 30 seconds; scanning/authentication adds time. Requests and display writes from an old connection are invalidated and never replayed. The service keeps retrying after a client's initial connection wait times out.
 
 `probe`, `demo`, and `run` use the service socket with exclusive control when present. Without a service, they connect directly with automatic retries. A local lock prevents simultaneous Bluetooth owners. `status` remains available while the band is busy. Clients try to reattach after a service restart.
 

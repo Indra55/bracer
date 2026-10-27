@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import time
 from dataclasses import dataclass
 
@@ -44,6 +45,32 @@ def music_chunks(payload):
         yield bytes([0, flags | 3, index]) + payload[offset:offset + 17]
 
 
+async def connected_bluez_device(address):
+    """Find an existing Linux connection that may no longer advertise."""
+    if sys.platform != "linux":
+        return None
+    from bleak.backends.device import BLEDevice
+    from dbus_fast import BusType, Message, MessageType
+    from dbus_fast.aio import MessageBus
+
+    bus = MessageBus(bus_type=BusType.SYSTEM)
+    try:
+        async with asyncio.timeout(5):
+            await bus.connect()
+            reply = await bus.call(Message(destination="org.bluez", path="/",
+                                           interface="org.freedesktop.DBus.ObjectManager",
+                                           member="GetManagedObjects"))
+        if reply.message_type == MessageType.ERROR:
+            raise RuntimeError(f"Cannot inspect Bluetooth devices: {reply.error_name}")
+        for path, interfaces in reply.body[0].items():
+            props = {key: value.value for key, value in interfaces.get("org.bluez.Device1", {}).items()}
+            if props.get("Address", "").upper() == address.upper() and props.get("Connected"):
+                return BLEDevice(props["Address"], props.get("Alias"), {"path": path, "props": props})
+        return None
+    finally:
+        bus.disconnect()
+
+
 class Band:
     def __init__(self, address, key):
         self.address, self.key = address, key
@@ -65,7 +92,9 @@ class Band:
 
     async def __aenter__(self):
         from bleak import BleakClient, BleakScanner
-        device = await BleakScanner.find_device_by_address(self.address, timeout=20)
+        device = await connected_bluez_device(self.address)
+        if device is None:
+            device = await BleakScanner.find_device_by_address(self.address, timeout=20)
         if device is None:
             raise RuntimeError("Band not found. Turn off phone Bluetooth, wake the band, and retry.")
         self.client = BleakClient(device, disconnected_callback=self._disconnected)

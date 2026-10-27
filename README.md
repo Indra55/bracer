@@ -49,7 +49,7 @@ It follows Codex's existing permission rules. Play approves **one request**, wit
 
 ## things that still need poking
 
-Real standalone Codex commands have been accepted and rejected from the band. The ordinary-chat hook is implemented, but its complete accept/decline round trip still needs validation. Readability, vibration, and repeated reconnects need more time on actual hardware. [Receipts and loose ends →](docs/DEVICE_ACCEPTANCE.md)
+Real standalone Codex commands have been accepted and rejected from the band. The ordinary-chat hook has also accepted a real command; ordinary-chat rejection still needs validation. Readability, vibration, and repeated reconnects need more time on actual hardware. [Receipts and loose ends →](docs/DEVICE_ACCEPTANCE.md)
 
 ---
 

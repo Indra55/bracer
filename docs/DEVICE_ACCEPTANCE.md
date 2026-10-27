@@ -1,6 +1,14 @@
 # Validation status
 
-Software checks, historical hardware results, and current physical acceptance are separate. This page records evidence available on 2026-10-26; it does not assert that an installed service or device is currently connected.
+Software checks, historical hardware results, and current physical acceptance are separate. This page records dated observations through 2026-10-27; it does not assert that an installed service or device is currently connected.
+
+## Reconnect investigation, 2026-10-27
+
+- The enabled service started at login but repeatedly reported `Band not found`, even while BlueZ reported the configured band connected. The phone's Bluetooth had also been on; the user turned it off.
+- Fixed discovery to reuse an existing BlueZ connection to the configured address before scanning for advertisements. Restarting the service then immediately logged `Band connected; controls ready`.
+- Codex CLI `0.164.0` reported the global PermissionRequest hook enabled and **trusted**.
+- An ordinary chat's real host status command reached the band; the user confirmed seeing the approval, and the service logged `Approval 454d: accept` at 23:01:12 IST. Codex then executed the command, which returned `connected: true`, `pending_reviews: 0`, and `error: null`. This confirms ordinary-chat acceptance with the current service. Ordinary-chat rejection remains unverified.
+- The updated suite ran 69 tests: 68 passed and the real Unix-socket test was skipped because the executor blocks sockets. Regression checks cover an already-connected band without advertising, scanning when no connection exists, matching the configured address, and closing the D-Bus connection on errors.
 
 ## Automated checks
 
@@ -37,7 +45,8 @@ The standalone acceptance/rejection results preceded later reconnect and native-
 - [ ] Verify timeout and disconnect decline pending requests on hardware.
 - [ ] Verify automatic recovery after range loss and a band restart.
 - [ ] Verify login startup after an actual computer reboot.
-- [ ] Review/trust the hook in `/hooks`, restart Codex, then confirm ordinary-chat acceptance and rejection without `run`.
+- [x] Confirm trusted hook discovery and ordinary-chat acceptance without `run` (2026-10-27).
+- [ ] Confirm ordinary-chat rejection without `run`.
 - [ ] Confirm readable standalone progress updates and completion vibration.
 
 ## Reproduce

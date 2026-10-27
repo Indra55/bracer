@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from miband_agent.approvals import ApprovalQueue, approval_pages
-from miband_agent.band import ALERT, AUTH, CHUNKED, EVENT, Band, BandEvent, music_chunks, music_event, music_payload
+from miband_agent.band import ALERT, AUTH, CHUNKED, EVENT, Band, BandEvent, connected_bluez_device, music_chunks, music_event, music_payload
 from miband_agent.codex import CodexSession
 from miband_agent.config import load_config
 
@@ -218,6 +218,12 @@ class ApprovalTests(unittest.IsolatedAsyncioTestCase):
 
 class AuthenticationTests(unittest.IsolatedAsyncioTestCase):
     async def test_auth_notifications_remain_active_through_music_subscription(self):
+        await self.check_connection(None)
+
+    async def test_already_connected_band_authenticates_without_advertising(self):
+        await self.check_connection(object())
+
+    async def check_connection(self, existing_device):
         band = Band("AA", b"\0" * 16)
         callbacks = {}
         client = SimpleNamespace(
@@ -243,7 +249,8 @@ class AuthenticationTests(unittest.IsolatedAsyncioTestCase):
         client.disconnect = AsyncMock(side_effect=disconnect)
         client.write_gatt_char = AsyncMock(side_effect=write)
         scanner = AsyncMock(return_value=object())
-        with patch("bleak.BleakScanner.find_device_by_address", scanner), \
+        with patch("miband_agent.band.connected_bluez_device", AsyncMock(return_value=existing_device)), \
+                patch("bleak.BleakScanner.find_device_by_address", scanner), \
                 patch("bleak.BleakClient", return_value=client):
             async with band:
                 self.assertTrue(band.connected)
@@ -253,6 +260,40 @@ class AuthenticationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual((await band.events.get()).action, "next")
         client.disconnect.assert_awaited_once()
         self.assertFalse(band.connected)
+        if existing_device is None:
+            scanner.assert_awaited_once()
+        else:
+            scanner.assert_not_awaited()
+
+    async def test_bluez_lookup_uses_only_connected_matching_address(self):
+        from dbus_fast import MessageType, Variant
+
+        def device(address, connected):
+            return {"org.bluez.Device1": {"Address": Variant("s", address),
+                                          "Connected": Variant("b", connected),
+                                          "Alias": Variant("s", "Mi Band")}}
+
+        objects = {"/other": device("11:22", True), "/offline": device("AA:BB", False),
+                   "/adapter": {"org.bluez.Adapter1": {}}}
+        bus = SimpleNamespace(connect=AsyncMock(), disconnect=unittest.mock.Mock(),
+                              call=AsyncMock(return_value=SimpleNamespace(
+                                  message_type=MessageType.METHOD_RETURN, body=[objects])))
+        with patch("dbus_fast.aio.MessageBus", return_value=bus):
+            self.assertIsNone(await connected_bluez_device("aa:bb"))
+            objects["/connected"] = device("AA:BB", True)
+            found = await connected_bluez_device("aa:bb")
+        self.assertEqual(found.address, "AA:BB")
+        self.assertEqual(found.details["path"], "/connected")
+        self.assertTrue(found.details["props"]["Connected"])
+        self.assertEqual(bus.disconnect.call_count, 2)
+
+    async def test_bluez_lookup_closes_bus_on_failure(self):
+        bus = SimpleNamespace(connect=AsyncMock(), disconnect=unittest.mock.Mock(),
+                              call=AsyncMock(side_effect=OSError("bus unavailable")))
+        with patch("dbus_fast.aio.MessageBus", return_value=bus):
+            with self.assertRaisesRegex(OSError, "bus unavailable"):
+                await connected_bluez_device("AA:BB")
+        bus.disconnect.assert_called_once()
 
     async def test_vibration_sends_find_and_stop(self):
         band = Band("AA", b"\0" * 16)
